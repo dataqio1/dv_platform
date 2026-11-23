@@ -1,0 +1,92 @@
+[
+  {
+    "PRODUCT_ID": 1,
+    "NAME": "Product 1",
+    "PRICE": 40.66,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 2,
+    "NAME": "Product 2",
+    "PRICE": 82.82,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 3,
+    "NAME": "Product 3",
+    "PRICE": 657.06,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 4,
+    "NAME": "Product 4",
+    "PRICE": 565.1,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 5,
+    "NAME": "Product 5",
+    "PRICE": 316.74,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 6,
+    "NAME": "Product 6",
+    "PRICE": 261.24,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 7,
+    "NAME": "Product 7",
+    "PRICE": 669.39,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 8,
+    "NAME": "Product 8",
+    "PRICE": 314.56,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 9,
+    "NAME": "Product 9",
+    "PRICE": 266.08,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 10,
+    "NAME": "Product 10",
+    "PRICE": 131.62,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 11,
+    "NAME": "Product 11",
+    "PRICE": 645.21,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 12,
+    "NAME": "Product 12",
+    "PRICE": 457.31,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 13,
+    "NAME": "Product 13",
+    "PRICE": 928.16,
+    "IN_STOCK": true
+  },
+  {
+    "PRODUCT_ID": 14,
+    "NAME": "Product 14",
+    "PRICE": 934.86,
+    "IN_STOCK": false
+  },
+  {
+    "PRODUCT_ID": 15,
+    "NAME": "Product 15",
+    "PRICE": 10.3,
+    "IN_STOCK": true
+  }
+]

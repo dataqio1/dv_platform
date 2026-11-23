@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # BLOCKING gate: the real-stack test suite (no mocks of external services).
+  # tests/live is excluded — those need live Snowflake/Oracle creds and self-skip
+  # locally; here we never give them creds so we skip the whole dir to keep CI
+  # hermetic. The spark extra is intentionally omitted so test_spark_compare's
+  # `importorskip("pyspark")` skips it (no JVM needed on the runner).
+  # ---------------------------------------------------------------------------
+  test:
+    name: tests (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install (dev + non-spark extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,snowflake,oracle,files,aws]"
+      - name: pytest (excluding live warehouse tests)
+        run: pytest --ignore=tests/live -q
+
+  # ---------------------------------------------------------------------------
+  # ADVISORY: lint / format / type. Surfaces debt in the logs without blocking
+  # merges (ruff: 15, black: ~140 files, mypy strict: ~1.4k today). Burn these
+  # down in dedicated PRs, then flip continue-on-error off per step to make them
+  # hard gates. New code is kept clean by .pre-commit-config.yaml.
+  # ---------------------------------------------------------------------------
+  lint:
+    name: lint / type (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: ruff
+        continue-on-error: true
+        run: ruff check src tests
+      - name: black --check
+        continue-on-error: true
+        run: black --check src tests
+      - name: mypy
+        continue-on-error: true
+        run: mypy
+
+  # ---------------------------------------------------------------------------
+  # BLOCKING gate: the runtime image must build (catches dependency/packaging
+  # breakage before it reaches the demo server).
+  # ---------------------------------------------------------------------------
+  docker:
+    name: docker build (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime image
+        run: docker build -f deploy/Dockerfile -t dv-platform:ci .

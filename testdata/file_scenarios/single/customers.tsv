@@ -1,0 +1,21 @@
+CUSTOMER_ID	NAME	EMAIL	COUNTRY	SIGNED_UP
+1001	Customer 1	user1@example.com	GB	2026-01-14
+1002	Customer 2	user2@example.com	BR	2026-08-16
+1003	Customer 3	user3@example.com	US	2026-08-06
+1004	Customer 4	user4@example.com	GB	2026-07-12
+1005	Customer 5		AU	2026-08-30
+1006	Customer 6	user6@example.com	AU	2026-03-20
+1007	Customer 7	user7@example.com	BR	2026-01-04
+1008	Customer 8	user8@example.com	IN	2025-12-22
+1009	Customer 9	user9@example.com	US	2026-08-04
+1010	Customer 10		IN	2026-04-10
+1011	Customer 11	user11@example.com	CA	2026-05-04
+1012	Customer 12	user12@example.com	AU	2026-07-13
+1013	Customer 13	user13@example.com	BR	2026-09-30
+1014	Customer 14	user14@example.com	IN	2026-01-18
+1015	Customer 15		GB	2026-01-15
+1016	Customer 16	user16@example.com	CA	2026-05-02
+1017	Customer 17	user17@example.com	DE	2026-07-15
+1018	Customer 18	user18@example.com	JP	2026-07-11
+1019	Customer 19	user19@example.com	US	2026-04-19
+1020	Customer 20		BR	2026-09-22

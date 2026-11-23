@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historical Baseline DQ Rules — Implementation Plan</title>
+<style>
+  :root{
+    --navy:#0f2742; --navy2:#1b3a5c; --teal:#0d9488; --teal7:#0f766e;
+    --ink:#1e293b; --muted:#64748b; --faint:#94a3b8; --line:#e2e8f0; --l2:#eef2f6;
+    --bg:#f7f9fb; --card:#fff;
+    --reuse:#047857; --reuse-bg:#ecfdf5; --ext:#1d4ed8; --ext-bg:#eff6ff; --new:#7c3aed; --new-bg:#f5f3ff;
+    --p1:#b91c1c; --p1b:#fef2f2; --p2:#b45309; --p2b:#fffbeb; --p3:#475569; --p3b:#f1f5f9;
+  }
+  *{box-sizing:border-box} html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--teal7);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  header.mast{background:linear-gradient(160deg,var(--navy),var(--navy2));color:#eef5fb;padding:40px 0 32px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#7fd4cb;font-weight:700}
+  h1{font-size:30px;line-height:1.15;margin:.35em 0 .3em;font-weight:800;letter-spacing:-.01em}
+  .tldr{max-width:74ch;color:#cbdced;font-size:16.5px}
+  .big{margin-top:14px;background:rgba(13,148,136,.16);border:1px solid rgba(127,212,203,.35);border-radius:10px;padding:12px 16px;color:#d7f2ee;font-size:14.5px;max-width:80ch}
+  .big b{color:#fff}
+  nav.jump{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav.jump .wrap{display:flex;gap:4px;flex-wrap:wrap;padding:10px 24px}
+  nav.jump a{font-size:13px;color:var(--muted);padding:5px 10px;border-radius:7px;font-weight:600}
+  nav.jump a:hover{background:var(--l2);color:var(--navy);text-decoration:none}
+  section{padding:32px 0 6px}
+  h2{font-size:21px;font-weight:800;color:var(--navy);margin:0 0 4px;letter-spacing:-.01em}
+  h2 .n{color:var(--teal);margin-right:10px}
+  .lede{color:var(--muted);max-width:80ch;margin:.2em 0 16px}
+  h3{font-size:15px;font-weight:700;color:var(--navy);margin:20px 0 8px}
+  p{max-width:82ch}
+  table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px;margin:8px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--l2);vertical-align:top}
+  thead th{background:#f1f5f9;color:var(--navy);font-weight:700;font-size:11.5px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  code{background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#334155}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+  .r-reuse{color:var(--reuse);background:var(--reuse-bg);border-color:#a7f3d0}
+  .r-ext{color:var(--ext);background:var(--ext-bg);border-color:#bfdbfe}
+  .r-new{color:var(--new);background:var(--new-bg);border-color:#ddd6fe}
+  .p1{color:var(--p1);background:var(--p1b);border-color:#fecaca}
+  .p2{color:var(--p2);background:var(--p2b);border-color:#fde68a}
+  .p3{color:var(--p3);background:var(--p3b);border-color:#e2e8f0}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:10px 0}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;font-size:13px}
+  .flow .step{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:600;color:var(--navy)}
+  .flow .arr{color:var(--faint);font-weight:700}
+  .statuses{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .st{font-size:12px;font-weight:700;padding:3px 10px;border-radius:7px}
+  .st-pass{background:#ecfdf5;color:#047857} .st-warn{background:#fffbeb;color:#b45309}
+  .st-fail{background:#fef2f2;color:#b91c1c} .st-learn{background:#eff6ff;color:#1d4ed8} .st-err{background:#f1f5f9;color:#475569}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  .c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .c h4{margin:0 0 4px;font-size:14px;color:var(--navy)} .c p{margin:0;font-size:13px;color:#475569}
+  .c .opts{margin-top:6px;font-size:12.5px;color:var(--teal7);font-weight:600}
+  .roadmap{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);margin-top:8px}
+  .ph{padding:14px 15px;border-right:1px solid var(--l2)} .ph:last-child{border-right:none}
+  .ph .tag{display:inline-block;font-weight:800;font-size:12px;color:#fff;padding:3px 10px;border-radius:7px;margin-bottom:8px}
+  .ph1{background:var(--p1)} .ph2{background:#d97706} .ph3{background:#64748b}
+  .ph ul{margin:0;padding-left:16px;font-size:12.5px;color:#334155} .ph li{margin:3px 0}
+  pre{background:#0f2742;color:#dbe8f3;border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.55}
+  pre .k{color:#7fd4cb} pre .c2{color:#94a3b8}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #d97706;border-radius:8px;padding:11px 14px;font-size:13.5px;color:#713f12;margin:12px 0}
+  footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 50px;color:var(--muted);font-size:12.5px}
+  @media(max-width:760px){.cards,.roadmap{grid-template-columns:1fr}.ph{border-right:none;border-bottom:1px solid var(--l2)}h1{font-size:25px}}
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="wrap">
+    <div class="eyebrow">Data Validator / DV Platform · DQ</div>
+    <h1>Historical Baseline DQ Rules — Implementation Plan</h1>
+    <p class="tldr">Validate any numeric value against <em>its own history</em> — not just fixed
+      thresholds. A value (from SQL, a file, or later a BI dashboard) is captured every run, stored
+      as history, and compared to a baseline (avg / median / stddev band / previous value / min–max).
+      Surfaces in <b>both Data Observability and Data Validation</b>.</p>
+    <div class="big"><b>Key finding:</b> ~60% of this already exists in the platform. The
+      <code>Metric</code> table is the observation store, the DQ rule engine already captures scalar
+      values via SQL, <code>anomaly.py</code> already computes a statistical baseline (median+MAD band,
+      calendar-aligned, Learning on thin history), and the integrations we just shipped cover the
+      alerting FRs. The real new work is a <b>baseline rule family</b> + first-class <b>metric
+      definitions</b> + the enriched observation/lifecycle, not a greenfield build.</div>
+  </div>
+</header>
+
+<nav class="jump"><div class="wrap">
+  <a href="#map">Requirements → platform</a>
+  <a href="#arch">Architecture</a>
+  <a href="#rules">Rule family</a>
+  <a href="#model">Data model</a>
+  <a href="#flow">Run flow</a>
+  <a href="#phases">Phasing</a>
+  <a href="#questions">Open questions</a>
+  <a href="#start">Where to start</a>
+</div></nav>
+
+<main class="wrap">
+
+  <section id="map">
+    <h2><span class="n">1</span>Requirements → what already exists</h2>
+    <p class="lede">The honest inventory — so the estimate is real. Tags: how much is already built.</p>
+    <div class="legend">
+      <span><span class="pill r-reuse">reuse</span> works today, use as-is</span>
+      <span><span class="pill r-ext">extend</span> exists, needs additions</span>
+      <span><span class="pill r-new">new</span> build it</span>
+    </div>
+    <table>
+      <thead><tr><th>Requirement area</th><th>Status</th><th>In the code today</th></tr></thead>
+      <tbody>
+        <tr><td>Observation / history store (FR-H1)</td><td><span class="pill r-ext">extend</span></td><td><code>Metric</code> (ts, table_ref, name, value, tags) at <code>models.py:203</code> — already stores a value series with dimension tags. Add: business_date, run_id, status, source_ref, excluded/accepted.</td></tr>
+        <tr><td>SQL value capture (FR-S1/S2)</td><td><span class="pill r-ext">extend</span></td><td>Rule engine already compiles a rule → aggregate SQL → one number (<code>evaluator.py</code>, <code>metric</code>/<code>custom_sql</code> types). Add: multi-row per-dimension, <code>{{run_date}}</code> params.</td></tr>
+        <tr><td>Statistical baseline + Learning (Statistical rule, FR-B3/B4)</td><td><span class="pill r-reuse">reuse</span></td><td><code>anomaly.py</code> already does median+MAD band, calendar-aligned weekday, and "insufficient history → don't fire". Generalize from volume to any metric.</td></tr>
+        <tr><td>Result + history + trend (FR-E1, FR-U2)</td><td><span class="pill r-reuse">reuse</span></td><td><code>RuleEvaluationService.record_result</code> + rule history endpoints + <code>TrendChart</code> component.</td></tr>
+        <tr><td>Alerting: email/Slack/Teams/webhook, per metric+severity, suppression (FR-E3/E4)</td><td><span class="pill r-reuse">reuse</span></td><td>The integrations + routing we just shipped (<code>/integrations</code>, incident dispatch, dedup).</td></tr>
+        <tr><td>Scheduled / API / CI-triggered runs (FR-E5)</td><td><span class="pill r-reuse">reuse</span></td><td>Scheduler + the out-of-process <code>dvp worker</code> (exit codes for pass/fail come free).</td></tr>
+        <tr><td>Credentials from connection store (NFR-2), audit (NFR-3), roles (NFR-6)</td><td><span class="pill r-reuse">reuse</span></td><td>Connections + SecretStore, <code>audit.record</code>, the 5-role RBAC.</td></tr>
+        <tr><td>File source + patterns (FR-S3)</td><td><span class="pill r-ext">extend</span></td><td><code>FileConnector</code> reads CSV/JSON/Parquet from S3/path. Add: value extraction (row count / sum / json-path / regex / size) + date-wildcard latest-file.</td></tr>
+        <tr><td>Baseline rule logic: deviation, monotonic, growth, relative-range, staleness</td><td><span class="pill r-new">new</span></td><td>The core new engine — pure functions over the metric's history series.</td></tr>
+        <tr><td>Metric <em>definition</em> (source config, usable in observability <b>and</b> validation)</td><td><span class="pill r-new">new</span></td><td>Today rules are table-scoped under a monitor; need a metric that can also attach to a project/compare or stand alone.</td></tr>
+        <tr><td>Lifecycle: exclude / accept / reset / backfill / retention / dedup-by-run (FR-H3–H6, FR-B5/B6)</td><td><span class="pill r-new">new</span></td><td>New observation flags + services + a backfill path; dedup on run_id; per-metric retention.</td></tr>
+        <tr><td>Dashboard source (FR-S4/S5)</td><td><span class="pill r-new">new</span></td><td>Phase 2 — "we don't have dashboard testing yet." Browser-extension / BI API capture + screenshot.</td></tr>
+        <tr><td>Rule builder + preview, chart exclude/accept, metrics summary, YAML export (FR-U1/U3/U6/U5)</td><td><span class="pill r-new">new</span></td><td>UI work + YAML (Phase 3).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="arch">
+    <h2><span class="n">2</span>Proposed architecture</h2>
+    <p class="lede">One <b>Metric</b> = a named numeric value + a source. Each run writes one <b>Observation</b> to
+      history. <b>Baseline rules</b> compare the new observation to a baseline computed from valid history.
+      A metric can be attached to a monitor (observability) or a project/compare (validation), or stand alone —
+      so it shows up in both surfaces with identical logic.</p>
+    <div class="flow">
+      <span class="step">Metric (source: SQL/file/dashboard)</span><span class="arr">→</span>
+      <span class="step">capture value</span><span class="arr">→</span>
+      <span class="step">Observation (history)</span><span class="arr">→</span>
+      <span class="step">baseline from valid history</span><span class="arr">→</span>
+      <span class="step">rules evaluate</span><span class="arr">→</span>
+      <span class="step">status + alert</span>
+    </div>
+    <p>Statuses carried on every result:</p>
+    <div class="statuses">
+      <span class="st st-pass">Pass</span><span class="st st-warn">Warn</span>
+      <span class="st st-fail">Fail</span><span class="st st-learn">Learning</span><span class="st st-err">Error</span>
+    </div>
+    <p class="lede" style="margin-top:14px">The capture engine (SQL/file/dashboard) and the baseline
+      evaluator are <b>pure and source-agnostic</b> — all three sources produce the same observation record,
+      so rules work identically (as the spec requires).</p>
+  </section>
+
+  <section id="rules">
+    <h2><span class="n">3</span>The baseline rule family</h2>
+    <p class="lede">Six rule types, each Warn or Fail, one- or two-sided. All operate on the metric's own
+      history window.</p>
+    <table>
+      <thead><tr><th>Rule</th><th>Passes when</th><th>Build note</th><th>Phase</th></tr></thead>
+      <tbody>
+        <tr><td><b>Deviation</b></td><td>within % / absolute tolerance of baseline (avg/median/last/min/max)</td><td>new pure fn; separate upper/lower limits (FR-R5)</td><td><span class="pill p1">P1</span></td></tr>
+        <tr><td><b>Monotonic (trend)</b></td><td>never moves the disallowed direction vs previous <em>valid</em> obs</td><td>new; needs reset-allowance date (FR-R3)</td><td><span class="pill p1">P1</span></td></tr>
+        <tr><td><b>Growth rate</b></td><td>change vs previous value within min–max (abs or %)</td><td>new pure fn</td><td><span class="pill p1">P1</span></td></tr>
+        <tr><td><b>Statistical</b></td><td>within N σ (or MAD band) of window mean</td><td><span class="pill r-reuse">reuse</span> <code>anomaly.py</code>, parameterize N</td><td><span class="pill p2">P2</span></td></tr>
+        <tr><td><b>Relative range</b></td><td>between window min and max ± padding</td><td>new pure fn</td><td><span class="pill p2">P2</span></td></tr>
+        <tr><td><b>Staleness</b></td><td>value changed within last N runs / N hours</td><td>new pure fn</td><td><span class="pill p2">P2</span></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px">Baseline windows (FR-B1): <code>last N observations</code>, <code>last N days</code>,
+      or <code>calendar-aligned</code> (same weekday ×N weeks / same date last year — already in <code>anomaly.py</code>).
+      Baselines exclude <code>Excluded</code>/<code>Error</code>/unaccepted-Fail points. Cold start → <code>Learning</code>
+      until ≥ min history (default 5), with an optional static fallback threshold.</p>
+  </section>
+
+  <section id="model">
+    <h2><span class="n">4</span>Data-model deltas</h2>
+    <p class="lede">Minimal additions — reuse <code>Metric</code> as the observation table, add a definition and lifecycle.</p>
+    <table>
+      <thead><tr><th>Entity</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>MetricDefinition</code> <span class="pill r-new">new</span></td><td>id, name, source_type (sql/file/dashboard), source_config (JSON: connection/query/value_col/dimension_cols, or file pattern/extraction, or dashboard url/selector), timezone, retention_days (default 400), fallback_threshold, attached_to (monitor_id / project_id / none), created_by. Tenant-scoped.</td></tr>
+        <tr><td><code>Metric</code> (observations) <span class="pill r-ext">extend</span></td><td>add: <code>metric_def_id</code>, <code>business_date</code>, <code>run_id</code>, <code>status</code>, <code>dimension_key</code> (promote from tags), <code>excluded</code>+reason, <code>accepted</code>, <code>source_ref</code> (query hash/file/screenshot). Store value as <b>Decimal</b> (NFR-5). Unique <code>(metric_def_id, run_id, dimension_key)</code> → dedup (FR-H5).</td></tr>
+        <tr><td><code>DQRule</code> (rules) <span class="pill r-ext">extend</span></td><td>new <code>type</code> values (deviation/monotonic/growth/statistical/relative_range/staleness) + their <code>config</code> schema (baseline aggregate, window, tolerances, direction, N, reset_date). Can reference a <code>metric_def_id</code> instead of a table.</td></tr>
+        <tr><td>Result <span class="pill r-ext">extend</span></td><td>store baseline value, deviation (abs+%), threshold applied, and the observation IDs used (FR-E1) → powers the plain-language message + the chart band.</td></tr>
+      </tbody>
+    </table>
+    <pre><span class="c2"># a P1 rule, as it will serialize (matches the spec's YAML)</span>
+<span class="k">type</span>: deviation
+<span class="k">baseline</span>: { aggregate: median, window: { days: 30 } }
+<span class="k">tolerance_pct_upper</span>: 10
+<span class="k">tolerance_pct_lower</span>: 2
+<span class="k">direction</span>: both
+<span class="k">severity</span>: fail</pre>
+  </section>
+
+  <section id="flow">
+    <h2><span class="n">5</span>Run flow (reuses the existing worker + scheduler)</h2>
+    <ol>
+      <li><b>Capture</b> the value — SQL via the connector (reuse), file via <code>FileConnector</code>+extraction, dashboard (P2).</li>
+      <li><b>Store</b> one Observation (dedup by run_id). A capture/parse failure → <code>Error</code>, not Fail (FR-S6).</li>
+      <li><b>Baseline</b> per rule from valid history (exclude Excluded/Error/unaccepted-Fail).</li>
+      <li><b>Evaluate</b> each rule → Pass/Warn/Fail/Learning. Metric result = worst across its rules (FR-R1).</li>
+      <li><b>Store</b> result + <b>alert</b> via the integrations/routing already built; plain-language message (FR-E2).</li>
+    </ol>
+    <p>Scheduled runs use the scheduler; ad-hoc/CI runs use <code>dvp worker</code> (exit codes for pass/fail come free). Everything stays in the customer's environment — <b>zero egress</b> (NFR-1), credentials from the connection store (NFR-2).</p>
+  </section>
+
+  <section id="phases">
+    <h2><span class="n">6</span>Phasing (follows the doc)</h2>
+    <div class="roadmap">
+      <div class="ph"><span class="tag ph1">Phase 1</span>
+        <ul>
+          <li>Metric definition + enriched Observation model + migration</li>
+          <li>SQL + file capture (reuse engine + FileConnector extraction)</li>
+          <li><b>Deviation, monotonic, growth</b> rules (pure, tested)</li>
+          <li>Baseline windows + Learning + exclude/accept/reset</li>
+          <li>Trend chart w/ baseline band; email/Slack alerts (reuse)</li>
+          <li>Wire into Observability (monitor) + Data Validation</li>
+        </ul>
+      </div>
+      <div class="ph"><span class="tag ph2">Phase 2</span>
+        <ul>
+          <li><b>Dashboard source</b> (capture + screenshot)</li>
+          <li><b>Statistical</b> (generalize anomaly.py), <b>relative-range</b>, <b>staleness</b></li>
+          <li>Calendar-aligned baselines (reuse), backfill (FR-H4)</li>
+          <li>Alert suppression, per-metric retention</li>
+        </ul>
+      </div>
+      <div class="ph"><span class="tag ph3">Phase 3</span>
+        <ul>
+          <li>Cross-source rules (dashboard == SQL in one run)</li>
+          <li>YAML/JSON metrics in version control (FR-U5)</li>
+          <li>Metrics summary view, dimension-at-scale tuning</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="questions">
+    <h2><span class="n">7</span>Open questions — my recommendations</h2>
+    <div class="cards">
+      <div class="c"><h4>Fail values in the baseline?</h4>
+        <p>FR-B2 says keep Fail values <em>out</em> until accepted.</p>
+        <div class="opts">Recommend: keep out by default (matches FR-B2) — prevents a bad spike from poisoning the band; user "Accept" pulls it in.</div></div>
+      <div class="c"><h4>Default minimum history?</h4>
+        <p>5 observations, or per-rule-type?</p>
+        <div class="opts">Recommend: default 5, overridable per rule; statistical needs more (≥ ~8–10) — anomaly.py already guards thin history.</div></div>
+      <div class="c"><h4>Dashboard capture mechanism?</h4>
+        <p>Browser extension only, or native Power BI / Tableau APIs?</p>
+        <div class="opts">Recommend: Phase 2; start with a generic selector + screenshot path, add native APIs later. (You flagged dashboard testing is new.)</div></div>
+      <div class="c"><h4>Dimension cap per metric?</h4>
+        <p>Limit (e.g. 500) to keep runs fast (NFR-4: 1k metrics/run).</p>
+        <div class="opts">Recommend: soft cap 500/metric with a surfaced warning (no silent truncation), configurable.</div></div>
+    </div>
+  </section>
+
+  <section id="start">
+    <h2><span class="n">8</span>Where I'd start</h2>
+    <p class="lede">The highest-value, lowest-risk, UI-independent slice that unblocks everything else:</p>
+    <table>
+      <thead><tr><th>#</th><th>Slice</th><th>Why first</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Pure baseline evaluator</b> — deviation, monotonic, growth (+ window/Learning/exclusions), with unit tests against the spec's acceptance criteria (avg-100 → 106 fails ±5%, 104 passes; 1000→990 fails non-decreasing, passes after reset).</td><td>No DB/UI needed; it's the core IP; trivially testable; the acceptance criteria become the test suite.</td></tr>
+        <tr><td>2</td><td><b>Metric definition + enriched observation</b> model + migration; SQL capture reusing the rule engine.</td><td>Turns the evaluator into a working metric with history.</td></tr>
+        <tr><td>3</td><td>Wire a run (scheduler/worker) → observation → evaluate → result → alert (reuse integrations).</td><td>End-to-end on real data; proves zero-egress + alerting.</td></tr>
+        <tr><td>4</td><td>Rule-builder UI + trend chart band in <b>both</b> Observability and Data Validation.</td><td>Surfaces it where users work.</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Note on "both surfaces":</b> metrics attach to a monitor (observability) <em>or</em> a
+      project/compare (validation) via <code>attached_to</code>, but the metric + rule + evaluator code is shared —
+      one engine, two entry points. No duplication.</div>
+  </section>
+
+  <footer>
+    Historical Baseline DQ Rules — implementation plan · grounded in the current <code>src/dvp</code>
+    (<code>Metric</code> models.py:203 · <code>evaluator.py</code> · <code>anomaly.py</code> · integrations/scheduler/worker).
+    Draft for review — no code written yet. Recommend starting with slice #1 (the pure baseline evaluator + acceptance tests).
+  </footer>
+</main>
+</body>
+</html>

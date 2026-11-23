@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-Engine Compare — Scenario Matrix</title>
+<style>
+  :root{
+    --ink:#1b2430; --ink-soft:#54616e; --line:#e4e8ee; --bg:#f7f8fa; --card:#fff;
+    --accent:#2d6cdf; --accent-soft:#eaf1fd;
+    --crit:#c0392b; --crit-bg:#fdecea; --perf:#b7791f; --perf-bg:#fdf6e3; --easy:#2f855a; --easy-bg:#e8f5ee;
+    --catch:#2f855a; --catch-bg:#e8f5ee; --partial:#b7791f; --partial-bg:#fdf6e3; --miss:#c0392b; --miss-bg:#fdecea; --na:#7a8794; --na-bg:#eef1f4;
+    --must:#2d6cdf; --later:#7a8794; --out:#c0392b;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em;}
+  .sub{color:var(--ink-soft);margin:0 0 20px;max-width:75ch;}
+  .stage0{background:var(--accent-soft);border:1px solid #cfe0fb;border-radius:12px;padding:16px 18px;margin:0 0 22px;}
+  .stage0 h2{margin:0 0 6px;font-size:15px;color:var(--accent);letter-spacing:.02em;text-transform:uppercase;}
+  .stage0 p{margin:6px 0 0;color:#2a3b57;max-width:90ch;}
+  .stage0 ol{margin:8px 0 0;padding-left:20px;color:#2a3b57;}
+  .stage0 li{margin:2px 0;}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin:0 0 18px;font-size:13px;color:var(--ink-soft);}
+  .legend b{color:var(--ink);font-weight:600;}
+  .badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.7;white-space:nowrap;}
+  .b-crit{color:var(--crit);background:var(--crit-bg);} .b-perf{color:var(--perf);background:var(--perf-bg);} .b-easy{color:var(--easy);background:var(--easy-bg);}
+  .b-catch{color:var(--catch);background:var(--catch-bg);} .b-partial{color:var(--partial);background:var(--partial-bg);} .b-miss{color:var(--miss);background:var(--miss-bg);} .b-na{color:var(--na);background:var(--na-bg);}
+  .toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 12px;border-bottom:1px solid var(--line);margin-bottom:10px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer;color:var(--ink-soft);user-select:none;}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .chip.lbl{border:none;background:none;cursor:default;color:var(--ink-soft);font-weight:600;padding-left:0;}
+  .row2{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px;}
+  #search{flex:1;min-width:200px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--card);}
+  .counts{font-size:13px;color:var(--ink-soft);}
+  .counts b{color:var(--ink);}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  thead th{position:sticky;top:0;background:#fbfcfd;text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);padding:10px 12px;border-bottom:1px solid var(--line);}
+  tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.catgroup td{background:#f1f4f8;font-weight:700;font-size:12px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-soft);padding:7px 12px;}
+  .scn{font-weight:600;}
+  .behav{color:var(--ink-soft);font-size:13.5px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+  .seg button{border:none;background:var(--card);padding:3px 9px;font-size:12px;cursor:pointer;color:var(--ink-soft);border-right:1px solid var(--line);}
+  .seg button:last-child{border-right:none;}
+  .seg button.on[data-v=must]{background:var(--must);color:#fff;}
+  .seg button.on[data-v=later]{background:var(--later);color:#fff;}
+  .seg button.on[data-v=out]{background:var(--out);color:#fff;}
+  .note{width:100%;min-width:150px;border:1px dashed var(--line);border-radius:6px;padding:4px 7px;font-size:12.5px;font-family:inherit;color:var(--ink);background:#fcfcfd;resize:vertical;margin-top:6px;}
+  .note:focus{outline:none;border-color:var(--accent);border-style:solid;}
+  .exportbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 20px;display:flex;gap:10px;align-items:center;justify-content:flex-end;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.04);}
+  .exportbar .sp{margin-right:auto;font-size:13px;color:var(--ink-soft);}
+  button.act{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--accent);}
+  button.warn{border-color:var(--out);background:#fff;color:var(--out);}
+  td.col-scn{width:22%;} td.col-behav{width:30%;}
+  @media(max-width:860px){
+    thead{display:none;}
+    table,tbody,tr,td{display:block;width:100%;}
+    tbody tr.catgroup td{display:block;}
+    tbody td{border-bottom:none;padding:3px 14px;}
+    tbody tr:not(.catgroup){border-bottom:1px solid var(--line);padding:10px 0;}
+    td.col-scn,td.col-behav{width:auto;}
+    td[data-h]::before{content:attr(data-h) " ";font-size:11px;text-transform:uppercase;color:var(--na);font-weight:600;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cross-Engine Compare — Scenario Matrix</h1>
+  <p class="sub">Every scenario a hash-based Oracle ↔ Snowflake data compare must survive. Triage each as
+    <b>Must</b> / <b>Later</b> / <b>Out</b>; edits auto-save in this browser. Export to markdown when you're ready to turn it into a spec + test plan.</p>
+
+  <div class="stage0">
+    <h2>Stage 0 — runs in every scenario, first</h2>
+    <p>Pull ~100 rows into memory from both sides (sampled by key from the source, same keys fetched from the target),
+       hash each row with <code>hashlib.sha256</code> in Python, and confirm it equals <em>both</em> the Oracle
+       <code>STANDARD_HASH</code> pushdown and the Snowflake <code>SHA2</code> pushdown — per column type. This is the gate:</p>
+    <ol>
+      <li><b>Validates the encoding contract</b> — if any engine's pushed-down hash ≠ the in-memory hash, the canonical SQL for some type is wrong; stop before trusting a full pushdown.</li>
+      <li><b>Estimates divergence</b> — decides which full strategy runs next (recursive bucket vs streamed merge vs sampled verdict).</li>
+    </ol>
+    <p>The <b>“Sample-gate catches it?”</b> column below is the honest scorecard: Stage 0 is a strong gate for <em>systematic</em> and <em>encoding</em> faults, but by construction it <em>cannot</em> find sparse, rare-row, or timing faults — those are exactly what the full compare (Stage 1+) exists to catch.</p>
+  </div>
+
+  <div class="legend">
+    <span><b>Risk:</b></span>
+    <span class="badge b-crit">critical</span> silent wrong answer
+    <span class="badge b-perf">perf</span> slow / costly
+    <span class="badge b-easy">easy</span> handled
+    <span style="width:14px"></span>
+    <span><b>Sample-gate:</b></span>
+    <span class="badge b-catch">catches</span> reliable
+    <span class="badge b-partial">partial</span> only if the draw hits it
+    <span class="badge b-miss">misses</span> sample can't see it
+    <span class="badge b-na">n/a</span> not a sample concern
+  </div>
+
+  <div class="toolbar">
+    <div class="chips">
+      <span class="chip lbl">Risk</span>
+      <span class="chip" data-f="risk" data-v="crit">critical</span>
+      <span class="chip" data-f="risk" data-v="perf">perf</span>
+      <span class="chip" data-f="risk" data-v="easy">easy</span>
+      <span class="chip lbl" style="margin-left:10px">Sample</span>
+      <span class="chip" data-f="sample" data-v="catch">catches</span>
+      <span class="chip" data-f="sample" data-v="partial">partial</span>
+      <span class="chip" data-f="sample" data-v="miss">misses</span>
+      <span class="chip lbl" style="margin-left:10px">Triage</span>
+      <span class="chip" data-f="triage" data-v="must">must</span>
+      <span class="chip" data-f="triage" data-v="later">later</span>
+      <span class="chip" data-f="triage" data-v="out">out</span>
+    </div>
+    <div class="row2">
+      <input id="search" placeholder="Filter scenarios…">
+      <span class="counts" id="counts"></span>
+    </div>
+  </div>
+
+  <table id="tbl"><tbody></tbody></table>
+</div>
+
+<div class="exportbar">
+  <span class="sp" id="triagecounts"></span>
+  <button class="act warn" id="reset">Reset triage</button>
+  <button class="act ghost" id="copyjson">Copy JSON</button>
+  <button class="act" id="copymd">Copy as markdown spec</button>
+</div>
+
+<script>
+const CATS = ["Structural / schema","Row population","Encoding (correctness landmines)","Keys","Compare semantics / options","Consistency / concurrency","Operational / environment","Reporting / progress"];
+const SCN = [
+ // cat, scenario, risk, sample, behavior, defaultTriage
+ ["Structural / schema","Identical schema + data (happy path)","easy","catch","Resolve in ~2 queries: COUNT(*) + whole-table checksum. Zero rows moved.","must"],
+ ["Structural / schema","Column order differs","perf","catch","Pair columns by name, never by position.","must"],
+ ["Structural / schema","Column-name case (Oracle UPPER vs Snowflake preserved)","crit","catch","Case-fold + map names before pairing, else wrong column pairing.","must"],
+ ["Structural / schema","Target has extra / fewer columns","perf","catch","Compare the common set; warn on unmatched; or let the user pick.","later"],
+ ["Structural / schema","Type mismatch (NUMBER/FLOAT/VARCHAR/DATE/CHAR)","crit","partial","Canonical contract per canonical type. Sample validates only the types it drew.","must"],
+ ["Structural / schema","Precision / scale differs on numerics","crit","partial","Fix a canonical scale and round identically on both sides.","must"],
+ ["Structural / schema","Mapped compare — different column names each side","crit","catch","Explicit source↔target map; each side hashes its own names in pair order.","later"],
+
+ ["Row population","Exact match","easy","catch","Fast path; zero rows moved.","must"],
+ ["Row population","Source-only rows (missing in target)","crit","partial","Bucket compare enumerates them; sample misses unless it draws a missing key.","must"],
+ ["Row population","Target-only rows (extra in target)","crit","partial","Same as source-only, mirrored.","must"],
+ ["Row population","Value-diff — same key, different non-key value","crit","partial","Sample catches only if it lands on a differing key; sparse diffs need the full pass.","must"],
+ ["Row population","Duplicate keys on one / both sides","crit","miss","Carry count-per-key in the bucket signal; flag ambiguous. 100-row sample rarely hits dups.","must"],
+ ["Row population","Empty table (one or both) / both empty","easy","catch","COUNT fast path resolves instantly.","must"],
+ ["Row population","Massive row-count asymmetry (1M vs 10)","perf","catch","COUNT check short-circuits before any hashing.","later"],
+
+ ["Encoding (correctness landmines)","NULL vs empty string (Oracle '' = NULL)","crit","partial","Canonical must collapse NULL/'' identically on both. Sample catches only if sampled rows carry NULL/empty.","must"],
+ ["Encoding (correctness landmines)","NULL inside a key column","crit","partial","Define NULL-key join semantics explicitly; sample may miss.","must"],
+ ["Encoding (correctness landmines)","Delimiter collision in the concatenated payload","crit","miss","Escape the separator or length-prefix each field, identically both sides. A 100-row sample won't reliably trigger a collision.","must"],
+ ["Encoding (correctness landmines)","Unicode NFC vs NFD (combining marks)","crit","partial","Normalize to NFC on both — Snowflake has no normalize fn, so may be a documented limitation.","must"],
+ ["Encoding (correctness landmines)","Oracle charset ≠ AL32UTF8","crit","catch","Read NLS_CHARACTERSET; convert or warn. Systematic on non-ASCII → sample catches.","must"],
+ ["Encoding (correctness landmines)","CHAR blank-padding / trailing spaces","crit","partial","RTRIM in the canonical form; sample catches if a CHAR column is drawn.","must"],
+ ["Encoding (correctness landmines)","Number formatting — trailing zeros, scientific notation","crit","catch","Shared NUMBER(38,s) + strip zeros (proven). Systematic → sample catches.","must"],
+ ["Encoding (correctness landmines)","Float NaN / ±Infinity / 0.1-not-exact-in-DOUBLE","crit","partial","Define canonical for NaN/Inf; avoid a DOUBLE round-trip that loses precision.","must"],
+ ["Encoding (correctness landmines)","Date / timestamp — fractional seconds & timezone","crit","partial","Fixed format (YYYY-MM-DD HH24:MI:SS.FF9); define TZ/NTZ/LTZ handling.","must"],
+ ["Encoding (correctness landmines)","Boolean representation (BOOLEAN vs 0/1 vs Y/N)","crit","partial","Canonical boolean mapping to a single text token both sides.","later"],
+ ["Encoding (correctness landmines)","Binary / RAW / BLOB","crit","partial","Canonical hex encoding; BLOB goes through the DBMS_CRYPTO path.","later"],
+ ["Encoding (correctness landmines)",">4000-byte row → Oracle STANDARD_HASH silent truncation","crit","partial","Width guard from column metadata; DBMS_CRYPTO CLOB or fall back. Sample catches only if it draws a wide row (pushdown ≠ in-memory).","must"],
+
+ ["Keys","Single numeric key","easy","catch","Ideal — MOD(key, B) bucketing.","must"],
+ ["Keys","Composite key","perf","catch","Canonical-concat the key; MOD(SHA256(key), B).","later"],
+ ["Keys","String / GUID key","perf","catch","Bucket via MOD(SHA256(key), B) — identical cross-engine.","later"],
+ ["Keys","No primary key at all","crit","partial","Hash the whole row as the key (dups indistinct) or refuse the compare.","must"],
+ ["Keys","Skewed key distribution (one giant bucket)","perf","na","Hash-bucketing evens it out; watch for straggler buckets.","later"],
+ ["Keys","Sparse / non-uniform key ranges","perf","na","Prefer hash-bucketing over range-bucketing.","later"],
+
+ ["Compare semantics / options","Numeric tolerance requested (±0.01)","crit","catch","Hashing is exact-only — hash exact columns, cell-compare tolerant ones (hybrid). Sample reveals within-tolerance diffs.","must"],
+ ["Compare semantics / options","Case-insensitive / ignore-spaces / null=empty toggles","perf","partial","Fold each toggle into the canonical form on both sides.","later"],
+ ["Compare semantics / options","Column subset / excluded columns","easy","catch","Hash only the selected columns.","later"],
+ ["Compare semantics / options","WHERE filter on one / both sides","perf","catch","Push the predicate into every bucket query consistently.","later"],
+ ["Compare semantics / options","Cross-type equality intended (NUMBER 1 == STRING '1')","crit","catch","Explicit policy — canonicalize to the same text, or keep distinct. Not an accident.","later"],
+
+ ["Consistency / concurrency","Table mutating mid-compare","crit","miss","Pin one snapshot (Snowflake Time-Travel AT + Oracle flashback SCN) and reuse across every level. Sample can't see timing.","must"],
+ ["Consistency / concurrency","No snapshot isolation available","perf","na","Accept and surface the point-in-time skew explicitly.","later"],
+
+ ["Operational / environment","DBMS_CRYPTO not granted (wide-row path)","perf","na","Detect up front; fall back to streaming / warn for wide rows.","later"],
+ ["Operational / environment","max_string_size STANDARD vs EXTENDED","perf","na","Detect; EXTENDED raises the STANDARD_HASH ceiling to 32767 bytes.","later"],
+ ["Operational / environment","Connection drop / timeout mid-compare","perf","na","Make it resumable from the last unresolved bucket; return partial results.","later"],
+ ["Operational / environment","Cancellation mid-flight","easy","na","CancelRegistry already exists — wire it into each query loop.","later"],
+
+ ["Reporting / progress","Diff materialization cap (don't pull 10M diffs)","perf","na","Cap pulled diffs; note the truncation in the summary.","later"],
+ ["Reporting / progress","Per-column mismatch breakdown","perf","na","Leaf-level cell compare feeds the per-column counts.","later"],
+ ["Reporting / progress","Real-time progress % + running diff count","perf","na","% = resolved key-space / total; stream '60% · 3 diffs so far'.","must"],
+ ["Reporting / progress","Inconclusive — sample couldn't verify encoding","crit","catch","If Stage 0 can't confirm the contract, don't trust the pushdown; report inconclusive.","must"],
+];
+
+const RISK_LBL={crit:"critical",perf:"perf",easy:"easy"};
+const SAMP_LBL={catch:"catches",partial:"partial",miss:"misses",na:"n/a"};
+const KEY="xeng-compare-triage-v1";
+let state = load();
+
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY)||"{}");return s;}catch(e){return {};}
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+function triageOf(i){return (state[i]&&state[i].t) || SCN[i][5];}
+function noteOf(i){return (state[i]&&state[i].n) || "";}
+function setTriage(i,t){state[i]=state[i]||{};state[i].t=t;save();render();}
+function setNote(i,n){state[i]=state[i]||{};state[i].n=n;save();updateCounts();}
+
+const filters={risk:new Set(),sample:new Set(),triage:new Set()};
+let q="";
+
+document.querySelectorAll(".chip[data-f]").forEach(c=>{
+  c.onclick=()=>{const f=c.dataset.f,v=c.dataset.v;
+    if(filters[f].has(v)){filters[f].delete(v);c.classList.remove("on");}
+    else{filters[f].add(v);c.classList.add("on");}
+    render();};
+});
+document.getElementById("search").oninput=e=>{q=e.target.value.toLowerCase();render();};
+
+function visible(i){
+  const [cat,scn,risk,samp]=SCN[i];
+  if(filters.risk.size&&!filters.risk.has(risk))return false;
+  if(filters.sample.size&&!filters.sample.has(samp))return false;
+  if(filters.triage.size&&!filters.triage.has(triageOf(i)))return false;
+  if(q&&!(cat+" "+scn+" "+SCN[i][4]).toLowerCase().includes(q))return false;
+  return true;
+}
+
+function render(){
+  const tb=document.querySelector("#tbl tbody");tb.innerHTML="";
+  let shown=0;
+  CATS.forEach(cat=>{
+    const idxs=SCN.map((s,i)=>i).filter(i=>SCN[i][0]===cat&&visible(i));
+    if(!idxs.length)return;
+    const gr=document.createElement("tr");gr.className="catgroup";
+    gr.innerHTML=`<td colspan="6">${cat} · ${idxs.length}</td>`;tb.appendChild(gr);
+    idxs.forEach(i=>{
+      shown++;
+      const [ ,scn,risk,samp,behav]=SCN[i];
+      const t=triageOf(i);
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td class="col-scn" data-h="Scenario"><span class="scn">${scn}</span>
+          <textarea class="note" data-i="${i}" rows="1" placeholder="note / expected behavior…">${esc(noteOf(i))}</textarea></td>
+        <td data-h="Risk"><span class="badge b-${risk}">${RISK_LBL[risk]}</span></td>
+        <td data-h="Sample-gate"><span class="badge b-${samp}">${SAMP_LBL[samp]}</span></td>
+        <td class="col-behav behav" data-h="Expected handling">${behav}</td>
+        <td data-h="Triage"><span class="seg">
+          <button data-i="${i}" data-v="must" class="${t==='must'?'on':''}">Must</button>
+          <button data-i="${i}" data-v="later" class="${t==='later'?'on':''}">Later</button>
+          <button data-i="${i}" data-v="out" class="${t==='out'?'on':''}">Out</button>
+        </span></td>`;
+      tb.appendChild(tr);
+    });
+  });
+  tb.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>setTriage(+b.dataset.i,b.dataset.v));
+  tb.querySelectorAll(".note").forEach(n=>{
+    autosize(n); n.oninput=()=>{autosize(n);setNote(+n.dataset.i,n.value);};
+  });
+  document.getElementById("counts").innerHTML=`<b>${shown}</b> / ${SCN.length} shown`;
+  updateCounts();
+}
+function autosize(t){t.style.height="auto";t.style.height=(t.scrollHeight)+"px";}
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function updateCounts(){
+  let m=0,l=0,o=0,crit_must=0,crit_total=0;
+  SCN.forEach((s,i)=>{const t=triageOf(i);if(t==='must')m++;else if(t==='later')l++;else o++;
+    if(s[2]==='crit'){crit_total++;if(t==='must')crit_must++;}});
+  document.getElementById("triagecounts").innerHTML=
+    `<b>Must ${m}</b> · Later ${l} · Out ${o} &nbsp;|&nbsp; critical covered as Must: <b>${crit_must}/${crit_total}</b>`;
+}
+
+document.getElementById("reset").onclick=()=>{if(confirm("Reset all triage + notes?")){state={};save();render();}};
+document.getElementById("copyjson").onclick=()=>{
+  const out=SCN.map((s,i)=>({category:s[0],scenario:s[1],risk:s[2],sampleGate:s[3],expected:s[4],triage:triageOf(i),note:noteOf(i)}));
+  copy(JSON.stringify(out,null,2),"copyjson","Copy JSON");
+};
+document.getElementById("copymd").onclick=()=>{
+  let md="# Cross-Engine Compare — Scenario Spec\n\n";
+  md+="**Stage 0 (runs always):** pull ~100 rows into memory from both sides, hash with `hashlib.sha256`, and confirm it equals both the Oracle `STANDARD_HASH` and Snowflake `SHA2` pushdown per type. Gate the full compare on this passing.\n\n";
+  ["must","later","out"].forEach(bucket=>{
+    const idxs=SCN.map((s,i)=>i).filter(i=>triageOf(i)===bucket);
+    if(!idxs.length)return;
+    md+=`\n## ${({must:"Must handle",later:"Later",out:"Out of scope"})[bucket]} (${idxs.length})\n\n`;
+    CATS.forEach(cat=>{
+      const c=idxs.filter(i=>SCN[i][0]===cat);
+      if(!c.length)return;
+      md+=`### ${cat}\n`;
+      c.forEach(i=>{const s=SCN[i];
+        md+=`- **${s[1]}** — _${RISK_LBL[s[2]]}_, sample: _${SAMP_LBL[s[3]]}_. ${s[4]}`;
+        const n=noteOf(i);if(n)md+=`\n  - Note: ${n}`;
+        md+="\n";
+      });
+      md+="\n";
+    });
+  });
+  copy(md,"copymd","Copy as markdown spec");
+};
+function copy(text,id,label){
+  navigator.clipboard.writeText(text).then(()=>{
+    const b=document.getElementById(id);b.textContent="Copied ✓";setTimeout(()=>b.textContent=label,1400);
+  });
+}
+render();
+</script>
+</body>
+</html>

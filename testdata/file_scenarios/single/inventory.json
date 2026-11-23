@@ -1,0 +1,64 @@
+{
+  "records": [
+    {
+      "SKU": "SKU-0001",
+      "WAREHOUSE": "EAST",
+      "QTY": 37
+    },
+    {
+      "SKU": "SKU-0002",
+      "WAREHOUSE": "EAST",
+      "QTY": 259
+    },
+    {
+      "SKU": "SKU-0003",
+      "WAREHOUSE": "WEST",
+      "QTY": 67
+    },
+    {
+      "SKU": "SKU-0004",
+      "WAREHOUSE": "WEST",
+      "QTY": 451
+    },
+    {
+      "SKU": "SKU-0005",
+      "WAREHOUSE": "EAST",
+      "QTY": 450
+    },
+    {
+      "SKU": "SKU-0006",
+      "WAREHOUSE": "EAST",
+      "QTY": 189
+    },
+    {
+      "SKU": "SKU-0007",
+      "WAREHOUSE": "WEST",
+      "QTY": 80
+    },
+    {
+      "SKU": "SKU-0008",
+      "WAREHOUSE": "WEST",
+      "QTY": 426
+    },
+    {
+      "SKU": "SKU-0009",
+      "WAREHOUSE": "WEST",
+      "QTY": 313
+    },
+    {
+      "SKU": "SKU-0010",
+      "WAREHOUSE": "EAST",
+      "QTY": 341
+    },
+    {
+      "SKU": "SKU-0011",
+      "WAREHOUSE": "WEST",
+      "QTY": 477
+    },
+    {
+      "SKU": "SKU-0012",
+      "WAREHOUSE": "EAST",
+      "QTY": 480
+    }
+  ]
+}

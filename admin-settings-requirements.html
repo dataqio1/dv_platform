@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin & Settings — Requirements · DV Platform</title>
+<style>
+  :root{
+    --navy:#0f2742; --navy-2:#1b3a5c; --teal:#0d9488; --teal-700:#0f766e;
+    --ink:#1e293b; --muted:#64748b; --faint:#94a3b8; --line:#e2e8f0; --line-2:#eef2f6;
+    --bg:#f7f9fb; --card:#ffffff;
+    --p0:#b91c1c; --p0-bg:#fef2f2; --p1:#b45309; --p1-bg:#fffbeb; --p2:#475569; --p2-bg:#f1f5f9;
+    --exists:#047857; --exists-bg:#ecfdf5; --wire:#1d4ed8; --wire-bg:#eff6ff; --new:#7c3aed; --new-bg:#f5f3ff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--teal-700); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px}
+
+  header.masthead{background:linear-gradient(160deg,var(--navy),var(--navy-2)); color:#eef5fb; padding:40px 0 34px}
+  header.masthead .wrap{display:block}
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#7fd4cb; font-weight:700}
+  h1{font-size:30px; line-height:1.15; margin:.35em 0 .3em; font-weight:800; letter-spacing:-.01em}
+  .tldr{max-width:72ch; color:#cbdced; font-size:16.5px}
+  .meta{margin-top:16px; display:flex; flex-wrap:wrap; gap:10px; font-size:12.5px}
+  .meta span{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); padding:4px 10px; border-radius:999px; color:#dbe8f3}
+
+  nav.jump{position:sticky; top:0; z-index:10; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); margin-top:0}
+  nav.jump .wrap{display:flex; gap:4px; flex-wrap:wrap; padding-top:10px; padding-bottom:10px}
+  nav.jump a{font-size:13px; color:var(--muted); padding:5px 10px; border-radius:7px; font-weight:600}
+  nav.jump a:hover{background:var(--line-2); text-decoration:none; color:var(--navy)}
+
+  section{padding:34px 0 6px}
+  h2{font-size:21px; font-weight:800; color:var(--navy); margin:0 0 4px; letter-spacing:-.01em}
+  h2 .n{color:var(--teal); font-weight:800; margin-right:10px}
+  .lede{color:var(--muted); max-width:78ch; margin:.2em 0 18px}
+  h3{font-size:15px; font-weight:700; color:var(--navy); margin:22px 0 8px}
+  p{max-width:80ch}
+
+  .principles{list-style:none; padding:0; margin:12px 0; display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .principles li{background:var(--card); border:1px solid var(--line); border-left:3px solid var(--teal); border-radius:8px; padding:12px 14px; font-size:14.5px}
+  .principles li b{color:var(--navy)}
+
+  table{border-collapse:collapse; width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; font-size:13.5px; margin:8px 0 6px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line-2); vertical-align:top}
+  thead th{background:#f1f5f9; color:var(--navy); font-weight:700; font-size:12px; letter-spacing:.03em; text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  td code,p code,li code{background:#f1f5f9; padding:1px 6px; border-radius:5px; font-size:12.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#334155}
+  .yes{color:var(--exists); font-weight:700}
+  .no{color:var(--faint)}
+
+  /* pills */
+  .pill{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; letter-spacing:.02em; white-space:nowrap; border:1px solid transparent}
+  .st-exists{color:var(--exists); background:var(--exists-bg); border-color:#a7f3d0}
+  .st-wire{color:var(--wire); background:var(--wire-bg); border-color:#bfdbfe}
+  .st-new{color:var(--new); background:var(--new-bg); border-color:#ddd6fe}
+  .p0{color:var(--p0); background:var(--p0-bg); border-color:#fecaca}
+  .p1{color:var(--p1); background:var(--p1-bg); border-color:#fde68a}
+  .p2{color:var(--p2); background:var(--p2-bg); border-color:#e2e8f0}
+  .gate{color:#0e7490; background:#ecfeff; border-color:#a5f3fc; font-family:ui-monospace,Menlo,monospace; font-size:10.5px}
+
+  /* module cards */
+  .modules{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px}
+  .mod{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 16px 14px; display:flex; flex-direction:column}
+  .mod .top{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .mod h3{margin:0; font-size:15.5px}
+  .mod .tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px}
+  .mod p{font-size:13.5px; color:#334155; margin:10px 0 0; max-width:none}
+  .mod .be{margin-top:10px; font-size:12px; color:var(--muted); border-top:1px dashed var(--line); padding-top:9px}
+  .mod .be b{color:var(--navy); font-weight:700}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin:10px 0 2px}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+
+  /* timeline */
+  .roadmap{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:10px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card)}
+  .phase{padding:14px 15px; border-right:1px solid var(--line-2)}
+  .phase:last-child{border-right:none}
+  .phase .ph{font-weight:800; font-size:13px; color:#fff; display:inline-block; padding:3px 10px; border-radius:7px; margin-bottom:9px}
+  .ph-0{background:var(--p0)} .ph-1a{background:#d97706} .ph-1b{background:#ca8a04} .ph-2{background:#64748b}
+  .phase ul{margin:0; padding-left:17px; font-size:13px; color:#334155}
+  .phase li{margin:3px 0}
+
+  .callouts{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px}
+  .decision{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 15px}
+  .decision h4{margin:0 0 3px; font-size:14px; color:var(--navy)}
+  .decision p{margin:0; font-size:13px; color:#475569}
+  .decision .opts{margin-top:7px; font-size:12.5px; color:var(--teal-700); font-weight:600}
+
+  .note{background:#fffbeb; border:1px solid #fde68a; border-left:3px solid #d97706; border-radius:8px; padding:11px 14px; font-size:13.5px; color:#713f12; margin:12px 0}
+
+  footer{margin-top:40px; border-top:1px solid var(--line); padding:22px 0 50px; color:var(--muted); font-size:12.5px}
+
+  @media (max-width:760px){
+    .principles,.modules,.callouts{grid-template-columns:1fr}
+    .roadmap{grid-template-columns:1fr; } .phase{border-right:none; border-bottom:1px solid var(--line-2)}
+    h1{font-size:25px}
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">DV Platform · Data Observability &amp; Testing</div>
+    <h1>Admin &amp; Settings — Requirements</h1>
+    <p class="tldr">A single, RBAC-gated home for everything an administrator does — members &amp; roles,
+      connections, audit, outbound integrations (email · Slack · Teams · Jira · Rally), secrets,
+      scheduler and system config. Grounded in the platform as it exists today; each capability is
+      tagged by how much already exists. For review &amp; sign-off before implementation.</p>
+    <div class="meta">
+      <span>Status: Draft for review</span>
+      <span>Owner: dhiraj.peechara@dataq.io</span>
+      <span>Scope: <code>src/dvp</code> API + <code>frontend/src</code></span>
+      <span>No code written yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="jump">
+  <div class="wrap">
+    <a href="#goals">Goals</a>
+    <a href="#access">Placement &amp; Access</a>
+    <a href="#rbac">RBAC model</a>
+    <a href="#modules">Admin modules</a>
+    <a href="#integrations">Integrations</a>
+    <a href="#crosscutting">Cross-cutting</a>
+    <a href="#endpoints">Backend endpoints</a>
+    <a href="#roadmap">Phasing</a>
+    <a href="#decisions">Open decisions</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <section id="goals">
+    <h2><span class="n">1</span>Goals &amp; guiding principles</h2>
+    <p class="lede">Consolidate admin functionality that is today scattered (connections, projects, tags),
+      invisible (audit, scheduler), or missing (members, integrations) into one place — without
+      re-inventing the tenancy and permission model that already exists.</p>
+    <ul class="principles">
+      <li><b>One home for governance</b> — members/roles, connections, audit, integrations, secrets, system config.</li>
+      <li><b>RBAC-gated, least privilege</b> — the tab and each section render only for the matching permission.</li>
+      <li><b>Mode-aware</b> — adapts across <code>local</code> / <code>server</code> / <code>prod</code> and identity via local / OIDC / LDAP.</li>
+      <li><b>Everything audited</b> — reuse the existing <code>AuditLog</code> + <code>audit.record()</code>; no silent mutations.</li>
+      <li><b>Reuse the tenancy model</b> — <code>Organization → Group → User</code> via <code>Membership(role)</code>; 5 roles, 7 permissions.</li>
+      <li><b>Secrets never leave the server</b> — credentials stay in the <code>SecretStore</code>, consistent with connections today.</li>
+    </ul>
+  </section>
+
+  <section id="access">
+    <h2><span class="n">2</span>Placement &amp; access control</h2>
+    <p class="lede">A new top-nav <b>Admin</b> tab (after Connections), visible only when the user holds an
+      admin permission. A left rail inside Admin lists the modules; each module is independently gated,
+      so the same tab shows more or less depending on the role.</p>
+    <table>
+      <thead><tr><th>Concern</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Tab visibility</td><td>Rendered only if <code>can("manage_group")</code> or <code>can("manage_connections")</code> — the frontend already exposes <code>can(permission)</code> from <code>/me</code>.</td></tr>
+        <tr><td>Section gating</td><td>Each module checks its own permission (below). An <code>editor</code> sees nothing; <code>group_admin</code> sees most; <code>org_admin</code> sees org-level extras.</td></tr>
+        <tr><td>Enforcement</td><td>Both ends: backend <code>ctx.require(Permission.X)</code> on every endpoint <em>and</em> frontend <code>can(...)</code> on every section.</td></tr>
+        <tr><td>Mode signal</td><td>A lightweight <code>GET /system/info</code> tells the UI the runtime mode &amp; identity provider so it can hide/disable what doesn't apply (e.g. editing roles under LDAP).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="rbac">
+    <h2><span class="n">3</span>RBAC model (today — the foundation)</h2>
+    <p class="lede">These 5 roles and 7 permissions already exist and are enforced in
+      <code>core/tenancy.py</code>. The Admin area surfaces them; it does not change them.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Permission ↓ / Role →</th>
+          <th>report_viewer</th><th>viewer</th><th>editor</th><th>group_admin</th><th>org_admin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>READ</code></td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+        <tr><td><code>WRITE</code></td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+        <tr><td><code>VIEW_REPORTS</code></td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+        <tr><td><code>MANAGE_CONNECTIONS</code></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td></tr>
+        <tr><td><code>MANAGE_PROJECTS</code></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td><code>MANAGE_GROUP</code></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td></tr>
+        <tr><td><code>MANAGE_ORG</code></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Flag for review:</b> as currently defined, <code>org_admin</code> holds only
+      <code>{MANAGE_ORG, MANAGE_PROJECTS}</code> — it does <em>not</em> inherit <code>group_admin</code>'s
+      read/write/manage-group. If org admins should be a superset of group admins, that's a small,
+      deliberate change to the role→permission matrix we should make early.</div>
+  </section>
+
+  <section id="modules">
+    <h2><span class="n">4</span>Admin modules</h2>
+    <p class="lede">Each card shows how much already exists, the permission gate, and the priority.</p>
+    <div class="legend">
+      <span><span class="pill st-exists">exists</span> works today</span>
+      <span><span class="pill st-wire">wire-up</span> backend exists, needs UI</span>
+      <span><span class="pill st-new">new</span> build backend + UI</span>
+      <span><span class="pill p0">P0</span> <span class="pill p1">P1</span> <span class="pill p2">P2</span> priority</span>
+    </div>
+
+    <div class="modules">
+      <div class="mod">
+        <div class="top"><h3>4.1 Access &amp; Members</h3></div>
+        <div class="tags"><span class="pill st-new">new</span><span class="pill gate">MANAGE_GROUP</span><span class="pill p0">P0</span></div>
+        <p>The biggest gap: roles are enforced but there is no way to see group members or change a role.
+          List members (role, email, last activity), change role, add/remove, invite (server/OIDC).
+          <b>Mode-aware:</b> under LDAP, membership &amp; roles are JIT-provisioned → screen becomes
+          read-only with the group→role mapping shown instead.</p>
+        <div class="be"><b>New endpoints:</b> <code>GET/POST/PUT/DELETE /groups/{id}/members</code></div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.2 Connections</h3></div>
+        <div class="tags"><span class="pill st-exists">exists</span><span class="pill gate">MANAGE_CONNECTIONS</span><span class="pill p0">P0</span></div>
+        <p>Full CRUD + test already exist and are admin-gated. Relocate under Admin. Add impact-on-delete
+          ("breaks 4 monitors"), secret status, and which objects depend on each connection.</p>
+        <div class="be"><b>Reuse:</b> <code>/connections</code> CRUD · <b>Add:</b> dependency/impact lookup</div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.3 Audit &amp; Activity</h3></div>
+        <div class="tags"><span class="pill st-wire">wire-up</span><span class="pill gate">MANAGE_GROUP</span><span class="pill p0">P0</span></div>
+        <p><code>GET /audit</code> works and the frontend already has the <code>AuditEntry</code> type +
+          <code>listAudit()</code> — there's just no page. Build the viewer: filter by entity, actor,
+          action; show actor name/email; add date-range + CSV export.</p>
+        <div class="be"><b>Reuse:</b> <code>/audit</code> · <b>Add:</b> actor/date filter, <code>/audit/export</code></div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.4 Integrations</h3></div>
+        <div class="tags"><span class="pill st-new">new</span><span class="pill gate">MANAGE_GROUP</span><span class="pill p1">P1</span></div>
+        <p>Outbound connectivity: notification <b>channels</b> (Email · Slack · Teams · Webhook) and
+          <b>ticketing</b> (Jira · Rally · …). Configure, test, and route incidents/reports to them.
+          Closes the "incidents notify no one" gap. <a href="#integrations">Full detail below ↓</a></p>
+        <div class="be"><b>New:</b> <code>Integration</code> model + <code>/integrations</code> CRUD + routing + dispatch</div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.5 Secrets &amp; Credentials</h3></div>
+        <div class="tags"><span class="pill st-wire">partial</span><span class="pill gate">MANAGE_GROUP</span><span class="pill p1">P1</span></div>
+        <p>Secrets live out-of-DB (file/keyring/vault) and are referenced by connections/integrations.
+          Surface which have secrets, rotate/replace, revoke. Add secret-access auditing (reads aren't
+          audited today).</p>
+        <div class="be"><b>Reuse:</b> <code>SecretStore</code> · <b>Add:</b> <code>/…:rotate</code>, access audit</div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.6 Scheduler &amp; Runs</h3></div>
+        <div class="tags"><span class="pill st-wire">partial</span><span class="pill gate">MANAGE_GROUP</span><span class="pill p1">P1</span></div>
+        <p>A fixed-interval scheduler exists but is env-only and invisible. Surface on/off + interval
+          (read-only in local), status/next tick, per-monitor pause/resume, last-run outcomes.
+          Per-monitor cron is a larger future item (P2).</p>
+        <div class="be"><b>Add:</b> <code>/scheduler/status</code>, <code>/monitors/{id}:pause|resume</code></div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.7 System Settings &amp; Config</h3></div>
+        <div class="tags"><span class="pill st-new">new</span><span class="pill gate">MANAGE_GROUP / MANAGE_ORG</span><span class="pill p1">P1</span></div>
+        <p>Read-only mirror of runtime mode, identity provider, DB/secret/result backends, versions.
+          Plus a few safe editable knobs: default freshness SLAs, anomaly sensitivity, <b>data-retention
+          policy</b> (purge audit/history &gt; N days). Hard infra stays env-only &amp; read-only.</p>
+        <div class="be"><b>New:</b> <code>/system/info</code> (GET), <code>/system/settings</code> (GET/PUT)</div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.8 Projects &amp; Tags governance</h3></div>
+        <div class="tags"><span class="pill st-wire">wire-up</span><span class="pill gate">MANAGE_PROJECTS / WRITE</span><span class="pill p2">P2</span></div>
+        <p>Project CRUD + archive/restore exist; tag CRUD exists but is <em>not exposed in the UI at all</em>.
+          Add a governance panel: manage tags, view/restore archived projects, reassign ownership.</p>
+        <div class="be"><b>Reuse:</b> <code>/projects</code>, <code>/tags</code> CRUD · <b>Add:</b> UI only</div>
+      </div>
+
+      <div class="mod">
+        <div class="top"><h3>4.9 Organization &amp; Groups</h3></div>
+        <div class="tags"><span class="pill st-new">new</span><span class="pill gate">MANAGE_ORG</span><span class="pill p2">P2</span></div>
+        <p>For <code>org_admin</code>: list/create/delete groups, view quotas &amp; isolation tier (fields
+          already on the <code>Group</code> model), org policy. Lower priority unless running true
+          multi-tenant.</p>
+        <div class="be"><b>New:</b> <code>/orgs</code>, <code>/groups</code> CRUD</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="integrations">
+    <h2><span class="n">5</span>Integrations &amp; outbound connectivity</h2>
+    <p class="lede">Two categories under one roof, both extensible ("…etc") via a provider registry that
+      mirrors the existing connector registry. Credentials live in the <code>SecretStore</code>; the client
+      never sees them.</p>
+
+    <h3>A · Notification channels (push a message)</h3>
+    <table>
+      <thead><tr><th>Provider</th><th>Key config</th><th>Auth / secret</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><b>Email</b></td><td>SMTP host/port, from-address, TLS (or provider API)</td><td>SMTP creds / API key</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td><b>Slack</b></td><td>default channel, workspace</td><td>incoming-webhook URL or bot token</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td><b>Microsoft Teams</b></td><td>channel</td><td>incoming-webhook URL</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td><b>Webhook</b> (generic)</td><td>URL, method, headers, payload template</td><td>token / HMAC secret</td><td><span class="pill st-new">new</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>B · Work-item / ticketing (create &amp; track an issue)</h3>
+    <table>
+      <thead><tr><th>Provider</th><th>Key config</th><th>Auth / secret</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><b>Jira</b></td><td>base URL, project key, issue type, default assignee, field/label mapping</td><td>email + API token (or OAuth)</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td><b>Rally</b></td><td>workspace, project, work-item type</td><td>API key</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td><em>extensible</em></td><td>ServiceNow · Azure DevOps · GitHub Issues — same shape</td><td>—</td><td><span class="pill p2">later</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Unified design</h3>
+    <table>
+      <thead><tr><th>Element</th><th>Design</th></tr></thead>
+      <tbody>
+        <tr><td>Entity</td><td>One <code>Integration</code> = <code>{id, category: channel|ticketing, provider, name, enabled, config(JSON), secret_ref, status, last_delivery_at}</code>.</td></tr>
+        <tr><td>Extensibility</td><td>Provider registry: channels implement <code>send()</code>; ticketing implements <code>create_issue()</code> / <code>sync_status()</code>. Adding a provider = one registry entry. Extends today's <code>Notifier</code> (report-only) into multi-channel + a new <code>TicketingProvider</code> protocol.</td></tr>
+        <tr><td>Test</td><td><code>/integrations/{id}:test</code> — send a test message / create-and-close a test ticket.</td></tr>
+        <tr><td>Routing rules</td><td><em>event → integration(s) → field mapping.</em> Events: incident opened · severity ≥ threshold · monitor run failed · report generated. Dedup/throttle by incident fingerprint so a flapping check doesn't spam or open 50 tickets.</td></tr>
+        <tr><td>Two triggers</td><td><b>Incident alerting</b> (today incidents notify no one) and <b>report delivery</b> (unifies today's email/slack-in-<code>delivery</code>-JSON under managed channels).</td></tr>
+        <tr><td>Audit &amp; errors</td><td>Every create/edit/test/route-change audited; each delivery/ticket attempt logs success/failure with the error surfaced (no silent swallowing).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="crosscutting">
+    <h2><span class="n">6</span>Cross-cutting requirements</h2>
+    <table>
+      <thead><tr><th>Requirement</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Audit everything</td><td>Every create/update/delete/role-change/secret-rotation writes an <code>AuditLog</code> entry.</td></tr>
+        <tr><td>Two-ended gating</td><td>Backend <code>ctx.require(...)</code> on each endpoint + frontend <code>can(...)</code> on each section.</td></tr>
+        <tr><td>Mode awareness</td><td><code>/system/info</code> drives what the UI hides/disables (e.g. role editing off under LDAP; real channels off in local).</td></tr>
+        <tr><td>Safe destructive actions</td><td>Confirm + impact summary before delete ("breaks 4 monitors").</td></tr>
+        <tr><td>No secret leakage</td><td>Secrets never returned to the client — consistent with current connection design.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="endpoints">
+    <h2><span class="n">7</span>New backend endpoints implied</h2>
+    <table>
+      <thead><tr><th>Area</th><th>Endpoints</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Members</td><td><code>GET/POST/PUT/DELETE /groups/{id}/members</code></td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td>System</td><td><code>GET /system/info</code> · <code>GET/PUT /system/settings</code></td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td>Integrations</td><td><code>/integrations</code> CRUD · <code>/integrations/{id}:test</code> · routing rules · incident dispatcher</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td>Secrets</td><td><code>POST /connections/{id}/secret:rotate</code> (+ for integrations)</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td>Scheduler</td><td><code>GET /scheduler/status</code> · <code>POST /monitors/{id}:pause|resume</code></td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td>Audit</td><td><code>GET /audit/export</code> (+ actor/date filters)</td><td><span class="pill st-wire">extend</span></td></tr>
+        <tr><td>Org/Groups</td><td><code>/orgs</code>, <code>/groups</code> CRUD</td><td><span class="pill st-new">new</span></td></tr>
+        <tr><td>Already present</td><td><code>/connections</code>, <code>/projects</code>, <code>/tags</code>, <code>/audit</code> (list), <code>/me</code></td><td><span class="pill st-exists">exists</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="roadmap">
+    <h2><span class="n">8</span>Suggested phasing</h2>
+    <div class="roadmap">
+      <div class="phase">
+        <span class="ph ph-0">P0 · Foundation</span>
+        <ul>
+          <li>Admin shell + nav + gating</li>
+          <li>Access &amp; Members</li>
+          <li>Audit viewer</li>
+          <li>Connections relocated</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <span class="ph ph-1a">P1a · Alerting</span>
+        <ul>
+          <li>Email · Slack · Teams · Webhook</li>
+          <li>Incident routing + dedup</li>
+          <li>Channel test</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <span class="ph ph-1b">P1b · Ticketing + Ops</span>
+        <ul>
+          <li>Jira (one-way create)</li>
+          <li>Secrets rotation</li>
+          <li>Scheduler visibility</li>
+          <li>System settings + retention</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <span class="ph ph-2">P2 · Breadth</span>
+        <ul>
+          <li>Rally + status sync</li>
+          <li>Tags/Projects governance UI</li>
+          <li>Org/Groups management</li>
+          <li>Per-monitor cron</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="decisions">
+    <h2><span class="n">9</span>Open decisions — your steer</h2>
+    <p class="lede">These reorder the roadmap or change the shape of the build. Pick and I'll revise, then implement.</p>
+    <div class="callouts">
+      <div class="decision">
+        <h4>1 · Primary deployment</h4>
+        <p>Desktop/local (single no-password user) or server/enterprise with OIDC/LDAP? This decides whether Members leads P0 or Settings/Connections/Audit do.</p>
+        <div class="opts">desktop-first · enterprise-first</div>
+      </div>
+      <div class="decision">
+        <h4>2 · Role source of truth</h4>
+        <p>In-app role editing, or is LDAP/OIDC authoritative (making Members read-only)?</p>
+        <div class="opts">in-app editable · external (read-only)</div>
+      </div>
+      <div class="decision">
+        <h4>3 · First-cut scope</h4>
+        <p>Build the full P0 set, or start with the Admin shell + Audit viewer + Members to validate the pattern?</p>
+        <div class="opts">full P0 · thin slice first</div>
+      </div>
+      <div class="decision">
+        <h4>4 · Settings philosophy</h4>
+        <p>Read-only mirror of env config, or genuinely editable runtime settings (retention, defaults)?</p>
+        <div class="opts">read-only · editable knobs</div>
+      </div>
+      <div class="decision">
+        <h4>5 · Jira / Rally direction</h4>
+        <p>One-way create first, or bi-directional status sync from day one?</p>
+        <div class="opts">one-way · bi-directional</div>
+      </div>
+      <div class="decision">
+        <h4>6 · Evidence on tickets</h4>
+        <p>Attach failure evidence (bad-data sample) to tickets/emails, like the wider DataQ platform does?</p>
+        <div class="opts">attach · link-only</div>
+      </div>
+      <div class="decision">
+        <h4>7 · Integrations permission</h4>
+        <p>Add a dedicated <code>MANAGE_INTEGRATIONS</code> permission, or fold under <code>MANAGE_GROUP</code>?</p>
+        <div class="opts">dedicated · fold in</div>
+      </div>
+      <div class="decision">
+        <h4>8 · org_admin composition</h4>
+        <p>Should <code>org_admin</code> be a superset of <code>group_admin</code> (vs today's narrow set)?</p>
+        <div class="opts">superset · keep narrow</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    DV Platform · Admin &amp; Settings requirements · Draft for review. Grounded in the current
+    <code>src/dvp</code> API and <code>frontend/src</code> inventory. No implementation has started —
+    awaiting sign-off on scope &amp; the open decisions above.
+  </footer>
+
+</main>
+</body>
+</html>

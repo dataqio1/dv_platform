@@ -1,0 +1,29 @@
+# Keep NEW/changed code clean without a repo-wide reformat. These hooks run only on
+# the files you touch, so they won't rewrite the ~140 not-yet-black-formatted files
+# in one go. Install once with:  pre-commit install
+# Run across everything on demand with:  pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+        # We use black as the formatter of record; ruff-format is disabled to avoid
+        # two formatters fighting. Left here (commented) for teams that prefer it.
+        stages: [manual]
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]

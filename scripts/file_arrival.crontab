@@ -1,0 +1,21 @@
+# File-arrival schedule for data-observability freshness testing.
+#
+# These entries periodically drop a fresh file into the S3 arrivals prefixes so the
+# file-arrival freshness monitors (created by seed_file_monitors.py) keep seeing new data.
+# Comment out / remove an entry to let that monitor go stale and watch it alert
+# (warning past its warn_after_hours, severe past severe_after_hours).
+#
+# Install (replace the repo path):
+#   ( crontab -l 2>/dev/null; sed 's#/REPO#/Users/dhiraj/Documents/dataq/dv_platform#' \
+#       scripts/file_arrival.crontab ) | crontab -
+# Inspect:  crontab -l
+# Remove :  crontab -l | grep -v drop_arrival.py | crontab -
+#
+# AWS creds must be available to cron's environment (e.g. an instance role, or set
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_DEFAULT_REGION in this file).
+
+# Hourly arrival — for an "expect new data every hour" monitor.
+0 * * * * cd /REPO && .venv/bin/python scripts/drop_arrival.py --dest s3://dataq-testing-data/observability/arrivals/hourly/ >> /tmp/dvp_arrival.log 2>&1
+
+# Daily arrival at 06:00 UTC — for an "expect new data daily" monitor.
+0 6 * * * cd /REPO && .venv/bin/python scripts/drop_arrival.py --dest s3://dataq-testing-data/observability/arrivals/daily/ --rows 200 >> /tmp/dvp_arrival.log 2>&1

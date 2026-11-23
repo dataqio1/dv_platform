@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-Engine Data Compare — Algorithm Walkthrough</title>
+<style>
+  :root{
+    --ink:#1b2430; --soft:#55616e; --line:#e3e7ec; --bg:#f6f7f9; --card:#fff;
+    --navy:#1b2430; --teal:#0f766e; --teal-bg:#e7f3f1;
+    --green:#2f855a; --green-bg:#e9f6ef; --amber:#b45309; --amber-bg:#fdf3e3; --red:#b42318; --red-bg:#fdecea;
+    --prune:#0f766e; --bisect:#b45309; --bail:#b42318;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .page{max-width:960px;margin:0 auto;padding:26px 22px 60px;}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em;}
+  .lede{color:var(--soft);margin:0 0 20px;max-width:78ch;}
+  .lede b{color:var(--ink);}
+  .grid{display:grid;grid-template-columns:34px 1fr;gap:0 14px;}
+  .step{display:contents;}
+  .num{grid-column:1;display:flex;flex-direction:column;align-items:center;}
+  .dot{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .rail{flex:1;width:2px;background:var(--line);margin:3px 0;}
+  .step:last-child .rail{display:none}
+  .body{grid-column:2;padding-bottom:16px;min-width:0;}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:13px 15px;}
+  .box h3{margin:0 0 4px;font-size:15px;}
+  .box p{margin:5px 0 0;color:var(--soft);font-size:13.5px;}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#f1f3f5;padding:1px 5px;border-radius:5px;color:#243;}
+  .mono-row{margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#334;background:#f7f9fa;border:1px solid var(--line);border-radius:7px;padding:8px 10px;overflow-x:auto;white-space:pre;}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;vertical-align:middle;}
+  .t-fast{color:var(--green);background:var(--green-bg);}
+  .t-gate{color:var(--teal);background:var(--teal-bg);}
+  /* decision */
+  .decision{border:1.5px dashed var(--teal);border-radius:11px;padding:13px 15px;background:var(--teal-bg);}
+  .decision h3{margin:0 0 6px;color:var(--teal);}
+  .paths{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
+  .path{border-radius:10px;padding:11px 12px;background:var(--card);border:1px solid var(--line);}
+  .path .h{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .path p{margin:5px 0 0;font-size:12.5px;color:var(--soft);}
+  .chip{font-size:10.5px;font-weight:800;letter-spacing:.03em;padding:1px 6px;border-radius:5px;text-transform:uppercase;}
+  .c-prune{color:var(--prune);background:var(--teal-bg);} .c-bisect{color:var(--bisect);background:var(--amber-bg);} .c-bail{color:var(--bail);background:var(--red-bg);}
+  .pedge-prune{border-top:3px solid var(--prune);} .pedge-bisect{border-top:3px solid var(--bisect);} .pedge-bail{border-top:3px solid var(--bail);}
+  .cond{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#243;margin-top:6px;display:block;}
+  /* evidence + insight */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:14px 16px;}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--soft);margin:0 0 10px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  td,th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--soft);}
+  td.v{font-family:ui-monospace,Menlo,monospace;}
+  .win{color:var(--green);font-weight:600;} .lose{color:var(--red);font-weight:600;}
+  .insight{margin-top:16px;background:#fffdf6;border:1px solid #f0e6c8;border-radius:11px;padding:13px 16px;}
+  .insight b{color:#7a5b12;}
+  .foot{margin-top:18px;color:var(--soft);font-size:12.5px;}
+  @media(max-width:720px){ .paths,.cols{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Cross-Engine Data Compare — how the algorithm works</h1>
+  <p class="lede">Comparing a table in <b>Oracle</b> against the “same” table in <b>Snowflake</b> without moving the
+    data. The trick: hash each row <b>inside each database</b> with a <b>standard</b> digest (Oracle
+    <code>STANDARD_HASH</code> = Snowflake <code>SHA2</code>), then only move tiny per-bucket summaries across the
+    wire — and <b>prune everything that already matches</b>. An adaptive gate decides, cheaply, when hashing stops
+    paying off and bails to a straight streaming pull.</p>
+
+  <div class="grid">
+    <!-- 1 -->
+    <div class="step">
+      <div class="num"><div class="dot">1</div><div class="rail"></div></div>
+      <div class="body"><div class="box">
+        <h3>Canonical row hash <span class="tag t-gate">the foundation</span></h3>
+        <p>Each side builds the <em>same</em> text for a row — numbers as stripped decimals, dates as
+          <code>YYYY-MM-DD</code>, nulls folded — then SHA-256s it. Equal rows ⇒ identical hash on <em>both</em>
+          engines. (Without this, <code>1.5</code> vs <code>1.5E+000</code> would make every row look different.)</p>
+        <div class="mono-row">rowhash = SHA256( id |'|'| name |'|'| strip(amount) |'|'| to_char(dt,'YYYY-MM-DD') |'|'| … )</div>
+      </div></div>
+    </div>
+
+    <!-- 2 -->
+    <div class="step">
+      <div class="num"><div class="dot">2</div><div class="rail"></div></div>
+      <div class="body"><div class="box">
+        <h3>Chunked first pass <span class="tag t-fast">prune + gate + progress, in one loop</span></h3>
+        <p>Break the key range into chunks of ≈<b>100k rows</b> (a small table = 1 chunk). Walk them in order; each
+          chunk is one <code>(COUNT, Σ rowhash)</code> per side. A chunk that <b>matches is pruned</b> — never read
+          again; a chunk that <b>differs is queued</b>. This replaces the old single whole-table scan — bounded
+          per query, emits <b>progress</b> per chunk, and all chunks matching ⇒ <b>identical, 0 rows moved</b>.</p>
+        <div class="mono-row">for each ~100k-row chunk:  (COUNT, Σ rowhash) per side   →   match ⇒ prune   ·   differ ⇒ queue</div>
+      </div></div>
+    </div>
+
+    <!-- 3 -->
+    <div class="step">
+      <div class="num"><div class="dot">3</div><div class="rail"></div></div>
+      <div class="body"><div class="box">
+        <h3>Running dirty-chunk % <span class="tag t-gate">the cheap decision</span></h3>
+        <p>The fraction of chunks that differ <em>is</em> the gate — no separate scan. It only grows, so once it
+          clears the threshold the final value can’t drop below it → decide immediately (early bail). Scattered
+          diffs dirty <b>every</b> chunk; a contiguous block dirties a <b>few</b>.</p>
+        <div class="mono-row">dirty_chunks / total   →   compare against bail threshold (default 60%)</div>
+      </div></div>
+    </div>
+
+    <!-- 4 decision -->
+    <div class="step">
+      <div class="num"><div class="dot">4</div></div>
+      <div class="body"><div class="decision">
+        <h3>Branch on dirty-bucket %</h3>
+        <p style="margin:0;color:#2a4b47;font-size:13px;">A bucket is “dirty” if its count or checksum differs. How
+          many are dirty tells you whether pruning can still save work:</p>
+        <div class="paths">
+          <div class="path pedge-prune">
+            <div class="h"><span class="chip c-prune">prune</span></div>
+            <span class="cond">few dirty</span>
+            <p>Most buckets match → skip them entirely. Recurse <b>only</b> into dirty buckets, bisecting down to small leaves.</p>
+          </div>
+          <div class="path pedge-bisect">
+            <div class="h"><span class="chip c-bisect">drill</span></div>
+            <span class="cond">dirty ≤ 60%</span>
+            <p>Dirty regions are localized → descend them, pull only the divergent <b>leaves</b>, and cell-compare those rows authoritatively.</p>
+          </div>
+          <div class="path pedge-bail">
+            <div class="h"><span class="chip c-bail">bail</span></div>
+            <span class="cond">dirty &gt; 60%</span>
+            <p>Almost every bucket differs → hashing can’t prune anything. <b>Stop</b> and hand off to the streaming engine (pull once), instead of a query storm.</p>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 5 -->
+    <div class="step">
+      <div class="num"><div class="dot">5</div></div>
+      <div class="body"><div class="box">
+        <h3>Leaf compare <span class="tag t-gate">authoritative</span></h3>
+        <p>Only divergent leaf ranges (a few hundred rows each) are pulled from both sides and compared cell-by-cell
+          by the in-memory engine — the <em>judge</em>. So a hash coincidence can only ever cost an extra leaf pull,
+          <b>never a wrong verdict</b>. Matched buckets were proven equal by checksum and are never read.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- evidence + insight -->
+  <div class="cols">
+    <div class="panel">
+      <h2>Measured — Oracle 1M ↔ Snowflake</h2>
+      <table>
+        <tr><th>Scenario</th><th>Dirty chunks</th><th>Outcome</th></tr>
+        <tr><td>0% identical</td><td class="v">0 / 10</td><td class="win">15s · 0 rows read</td></tr>
+        <tr><td>10% clustered</td><td class="v">1 / 10</td><td class="win">63s · prune 900k, pull 1 chunk · 26 queries</td></tr>
+        <tr><td>5% scattered</td><td class="v">8 / 10</td><td class="lose">bail → stream, 11s</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Why the gate exists</h2>
+      <table>
+        <tr><th>Diffs are…</th><th>Dirty buckets</th><th>Hash?</th></tr>
+        <tr><td>none</td><td class="v">0%</td><td class="win">wins (free)</td></tr>
+        <tr><td>clustered (a block)</td><td class="v">low</td><td class="win">wins (prunes)</td></tr>
+        <tr><td>scattered (everywhere)</td><td class="v">~100%</td><td class="lose">loses → stream</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="insight">
+    <b>The one idea to remember:</b> what kills a hash compare is not the diff <em>percentage</em> — it’s the diff
+    <em>dispersion</em>. A bucket is all-or-nothing: one changed row dirties the whole bucket. Scatter just 1% of
+    changes across the key space and <b>every</b> chunk goes dirty, so hashing must re-read the whole table — worse
+    than a plain pull. The chunked first pass measures exactly this as it scans and decides: <span class="chip c-prune">prune</span>
+    <span class="chip c-bisect">pull dirty chunk</span> or <span class="chip c-bail">bail</span>.
+  </div>
+
+  <p class="foot">Engine: <code>fingerprint_compare</code> (cross-engine bisection) · gate threshold
+    <code>fingerprint_bail_pct</code> (default 0.6) · leaf judge <code>compare_rows</code>. Same-database pairs use
+    the pushdown <code>recursive_hash</code>/<code>snowflake_hash</code> variants; small tables load in-memory directly.</p>
+</div>
+</body>
+</html>
