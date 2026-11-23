@@ -29,6 +29,7 @@ class SnowflakeConnector(Connector):
             coordinates.get("statement_timeout_s") or os.environ.get("DVP_SF_STATEMENT_TIMEOUT_S") or 3600
         )
         self._live = None  # reused session across queries (a compare issues many)
+        self._entry = None  # pool entry when this connector shares a process-pooled connection
         self._active_cursor = None  # the currently-executing cursor, so a cancel can abort it
 
     def server_fingerprint(self) -> str:
@@ -37,7 +38,58 @@ class SnowflakeConnector(Connector):
         c = self.coordinates or {}
         return f"snowflake://{(c.get('account') or '').lower()}"
 
+    def _uses_browser(self) -> bool:
+        """True when establishing a connection could pop a browser (SSO). Only these
+        flows benefit from process-level pooling — key-pair and token OAuth never
+        prompt, so there's nothing to deduplicate."""
+        if self.auth_method == "external_browser":
+            return True
+        if self.auth_method == "oauth_sso":
+            return not (self.secret or {}).get("access_token")
+        return False
+
+    def _pooling_enabled(self) -> bool:
+        """Share one physical connection per identity across the process. Auto-on for
+        browser SSO (so the popup happens once); forceable via DVP_SF_CONNECTION_POOL
+        (1/true to always pool, 0/false to never — useful for debugging)."""
+        import os
+
+        flag = (os.environ.get("DVP_SF_CONNECTION_POOL") or "").strip().lower()
+        if flag in ("0", "false", "off", "no"):
+            return False
+        if flag in ("1", "true", "on", "yes"):
+            return True
+        return self._uses_browser()
+
+    def _pool_key(self) -> tuple:
+        """Identity that must share a session. Database/schema are intentionally excluded:
+        this connector always fully-qualifies table names, so one session safely serves any
+        database/schema. Role and warehouse ARE included — they change permissions/compute."""
+        c = self.coordinates or {}
+        return (
+            "snowflake",
+            (c.get("account") or "").lower(),
+            c.get("user"),
+            c.get("role"),
+            c.get("warehouse"),
+            self.auth_method,
+        )
+
     def _connect(self):
+        """Return a live connection — pooled (reused, SSO once) when enabled, else private."""
+        if not self._pooling_enabled():
+            return self._new_raw_connection()
+        from dvp.connectors.pool import POOL
+
+        entry = POOL.acquire(
+            self._pool_key(),
+            self._new_raw_connection,  # the browser popup happens here, once per identity
+            lambda c: c.is_closed(),
+        )
+        self._entry = entry
+        return entry.conn
+
+    def _new_raw_connection(self):
         try:
             import snowflake.connector as sf
         except ImportError as exc:  # pragma: no cover
@@ -65,25 +117,26 @@ class SnowflakeConnector(Connector):
             raise DVPError(f"Snowflake connection error: {msg}") from exc
 
     def test(self) -> HealthResult:
+        # Establish the session first so auth/connect failures map to a category. When pooling
+        # is on, this is what first opens the browser AND seeds the pool — so the compare that
+        # follows a successful "test connection" reuses it and never pops a second page.
         try:
-            conn = self._connect()
+            self._session()
         except AuthExpiredError as exc:
             return HealthResult(ok=False, detail=exc.message, category="auth")
         except AuthError as exc:
             return HealthResult(ok=False, detail=exc.message, category="auth")
         except DVPError as exc:
             return HealthResult(ok=False, detail=exc.message, category="network")
-        try:
-            cur = conn.cursor()
-            cur.execute("SELECT CURRENT_VERSION(), CURRENT_ACCOUNT(), CURRENT_USER()")
-            version, account, user = cur.fetchone()
-            return HealthResult(
-                ok=True,
-                detail=f"connected to {account} as {user} (Snowflake {version})",
-                category="ok",
-            )
-        finally:
-            conn.close()
+        # Route through execute() so it holds the pool lock and shares the pooled session;
+        # the connection is deliberately left open for reuse (released via close(), not here).
+        res = self.execute("SELECT CURRENT_VERSION(), CURRENT_ACCOUNT(), CURRENT_USER()")
+        version, account, user = res.rows[0]
+        return HealthResult(
+            ok=True,
+            detail=f"connected to {account} as {user} (Snowflake {version})",
+            category="ok",
+        )
 
     def _session(self):
         """A reused live connection — a single compare issues hundreds of queries, so
@@ -100,13 +153,33 @@ class SnowflakeConnector(Connector):
         return self._live
 
     def close(self) -> None:
-        """Release the reused session (called after a compare finishes)."""
+        """Release this connector's session after a compare. For a POOLED connection this
+        only detaches the connector — the physical connection stays open in the pool so the
+        next compare reuses it (closing it would force a fresh browser login). For a private
+        session it closes the connection as before."""
+        if self._entry is not None:
+            self._entry = None
+            self._live = None
+            return
         if self._live is not None:
             try:
                 self._live.close()
             except Exception:  # noqa: BLE001
                 pass
             self._live = None
+
+    def _drop_session(self) -> None:
+        """Discard a session known to be broken. For a pooled connection this EVICTS it from
+        the pool (and closes it) so the next acquire rebuilds — one unavoidable re-auth —
+        rather than handing the dead connection to the next compare."""
+        if self._entry is not None:
+            from dvp.connectors.pool import POOL
+
+            POOL.evict(self._pool_key())
+            self._entry = None
+            self._live = None
+            return
+        self.close()
 
     def __del__(self):  # best-effort cleanup if close() wasn't called
         self.close()
@@ -123,15 +196,25 @@ class SnowflakeConnector(Connector):
                 pass
 
     def _run(self, conn, sql: str) -> QueryResult:  # noqa: ANN001
-        cur = conn.cursor()
-        self._active_cursor = cur
+        # When the connection is shared from the pool, serialize cursor use: a single Snowflake
+        # connection is not safe for concurrent execution, so two parallel compares that landed
+        # on the same identity take turns here instead of corrupting each other.
+        lock = self._entry.lock if self._entry is not None else None
+        if lock is not None:
+            lock.acquire()
         try:
-            cur.execute(sql)
-            cols = [c[0] for c in (cur.description or [])]
-            return QueryResult(columns=cols, rows=cur.fetchall())
+            cur = conn.cursor()
+            self._active_cursor = cur
+            try:
+                cur.execute(sql)
+                cols = [c[0] for c in (cur.description or [])]
+                return QueryResult(columns=cols, rows=cur.fetchall())
+            finally:
+                self._active_cursor = None
+                cur.close()
         finally:
-            self._active_cursor = None
-            cur.close()
+            if lock is not None:
+                lock.release()
 
     @staticmethod
     def _is_connection_error(exc: Exception) -> bool:
@@ -151,10 +234,16 @@ class SnowflakeConnector(Connector):
         try:
             return self._run(self._session(), sql)
         except Exception as exc:  # noqa: BLE001
-            reuse_dropped = self._is_connection_error(exc)
-            self.close()  # drop a possibly-bad session either way
-            if reuse_dropped:
-                return self._run(self._session(), sql)  # reconnect + retry once
+            if self._is_connection_error(exc):
+                # The session is genuinely dead: evict it (so no other compare reuses a dead
+                # pooled connection) and reconnect + retry once.
+                self._drop_session()
+                return self._run(self._session(), sql)
+            # A query error (bad SQL / statement timeout) — the session is still healthy. Keep a
+            # pooled connection open (evicting would force a needless browser re-auth); for a
+            # private session, drop it as before out of caution. Never silently re-run the query.
+            if self._entry is None:
+                self.close()
             raise
 
     def count(self, table: TableRef, predicate: str | None = None) -> int:
